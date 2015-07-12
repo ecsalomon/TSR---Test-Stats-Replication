@@ -72,7 +72,9 @@ processML1 <- function() {
   ml1collapsed$esDiff <- ml1collapsed$repES - ml1collapsed$numES
   ml1collapsed$wesDiff <- ml1collapsed$wRepES - ml1collapsed$numES
   
-  returncols <- c("effect", "sigRep", "esDiff", "wesDiff")
+  ml1collapsed$project <- "Many Labs 1"
+  
+  returncols <- c("effect", "sigRep", "esDiff", "wesDiff", "Project")
   
   return(ml1collapsed[returncols])
 }
