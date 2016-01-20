@@ -60,11 +60,9 @@ inputML3results <- function(unix = TRUE) {
   df <- read.table("Raw data/ML3/finaltable.txt", skip = 4, nrows = 10,
                    col.names = c("effect", "ESstat", "origES", "origCIlow",
                                  "origCIhi", "medRepES", "repES", "repCIlow",
-                                 "repCIhi", "wtRepES", "wtRepCIlow",
-                                 "wtRepCIhi", "propOppDir", "propSameDir",
-                                 "propNS", "statType", "keyStat", "df1", "df2",
-                                 "n", "p")
-                   )
+                                 "repCIhi", "wRepES", "wRepCIlow", "wRepCIhi",
+                                 "propOppDir", "propSameDir", "propNS",
+                                 "statType", "keyStat", "df1", "df2", "n", "p"))
   
   # give more useful names for the effects
   df[,1] <- c("Stroop", "Metaphoric restructuring", "Availability heuristic",
@@ -72,5 +70,10 @@ inputML3results <- function(unix = TRUE) {
               "Warmth perceptions", "ELM interaction",
               "Self-Esteem and subjective distance",
               "Credentials and prejudice", "Persistence and conscientiousness")
+  
+  # add column indicating which project the data came from
+  df[, "ML"] <- 3
+  
+  return(df)
   
 }
