@@ -67,7 +67,7 @@ inputML3results <- function(unix = TRUE) {
   # give more useful names for the effects
   df[,1] <- c("Stroop", "Metaphoric restructuring", "Availability heuristic",
               "Power and perspective-taking", "Weight embodiment",
-              "Warmth perceptions", "ELM interaction",
+              "Warmth perceptions", "Elaboration likelihood model",
               "Self-Esteem and subjective distance",
               "Credentials and prejudice", "Persistence and conscientiousness")
   
