@@ -65,11 +65,11 @@ inputML3results <- function(unix = TRUE) {
                                  "statType", "keyStat", "df1", "df2", "n", "p"))
   
   # give more useful names for the effects
-  df[,1] <- c("Stroop", "Metaphoric restructuring", "Availability heuristic",
+  df[,1] <- c("Stroop", "Metaphoric Restructuring", "Availability Heuristic",
               "Power and perspective-taking", "Weight embodiment",
               "Warmth perceptions", "Elaboration likelihood model",
               "Self-Esteem and subjective distance",
-              "Credentials and prejudice", "Persistence and conscientiousness")
+              "Credentials and prejudice", "Persistence and Conscientiousness")
   
   # add column indicating which project the data came from
   df[, "ML"] <- 3
