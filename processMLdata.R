@@ -1,18 +1,20 @@
 ################################################################################
-# This file builds a data frame containing the values from Table 3 in the      #
-# file "Many Labs 3 Manuscript Tables.pdf" (avail from https://osf.io/7zp9t/). #
-# Original results are based on Version 3 of this file (2015-09-27 02:34 PM).  #
+# This file builds a data frame containing data on effects and results from    #
+# Many Labs 1 and 3 and conducts several analyses designed to answet the       #
+# question of whether replication outcomes can predicted on the basis of       #
+# statistics that summarize the original articles reporting the replicated     #
+# effects.                                                                     #
 #                                                                              #
-# Required packages: plyr, xlsx, reshape, ggplot2, aod, psych                  #
+# Required packages: plyr, xlsx, reshape, ggplot2                              #
 #                                                                              #
 # ***WARNING***                                                                #
-# This function relies on another function (inputML3results) that is designed  #
-# to run on Unix-based systems, specifically OSX 10.10.5. Mac users will need  #
-# to install the pdftotext program (available from the poppler package (run    #
-# 'sudo port install poppler' at the Terminal). USERS OF OTHER SYSTEMS may     #
-# experience errors. The data frame this function creates can be read in       #
-# directly by setting unix to FALSE, if the file finaltable.txt was downloaded #
-# from Github into the /Raw data/ML3/ folder.                                  #
+# This code relies on a function (inputML3results) that is designed to run on  #
+# Unix-based systems, specifically OSX 10.10.5. Mac users will need to install #
+# the pdftotext program (available from the poppler package (run 'sudo port    #
+# install poppler' at the Terminal). USERS OF OTHER SYSTEMS may experience     #
+# errors. The data frame this function creates can be read in directly by      #
+# setting unix to FALSE, if the file finaltable.txt was downloaded  from       #
+# Github into the /Raw data/ML3/ folder.                                       #
 ################################################################################
 
 #load required packages and functions
@@ -31,17 +33,18 @@ mlData <- rbind(inputML1results(), inputML3results(unix = TRUE))
 mlData$sigRep <- mlData[, "p"] < .05
 
 # Not all of the original effects were converted to d because some of the
-# designs/reports do not permit this conversion. They won't be able to be used
+# designs/reports do not permit this conversion. They won't be able to be used.
+# However, these effect sizes in other metrics are in the origES column. Create
+# a new column containing only original ESs in Cohen's d.
 mlData$origD <- mlData$origES
-# test stat & n taken from Cacioppo, J. T., Petty, R. E., & Morris, K. J. (1983)
 mlData[mlData[, "ESstat"] != "d", ]$origD <- NA
 
-# create  esDiff and wesDiff
-mlData$esDiff <- mlData$repES - mlData$origD
-mlData$wesDiff <- mlData$wRepES - mlData$origD
+# create  difference between original and replication outcomes
+mlData$esDiff <- mlData$repES - mlData$origD # diff from meta-analytic d
+mlData$wesDiff <- mlData$wRepES - mlData$origD # diff from weighted avg d
 
 # Four of the replication effects come from the same paper (anchoring). Average
-# their stats to create composite
+# their stats to create a single composite
 anchoring <- mlData[grep("Anchoring", mlData$effect), ]
 mlReduce <- mlData[-grep("Anchoring", mlData$effect), ]
 mlReduce[nrow(mlReduce) + 1, ] <- c("Anchoring", "d",
@@ -54,12 +57,12 @@ mlReduce[, c(3:15, 17:18, 20:22, 24:26)] <- sapply(mlReduce[, c(3:15, 17:18,
                                                                 20:22, 24:26)],
                                                    as.numeric)
 
-
-# import article data
+# import hand-coded article data, containing hypothesis-critical test info for
+# each study in multi-study papers
 articleData <- read.csv("Raw\ data/metricsDataEntry/dataEntrySheet.csv",
                         fileEncoding="latin1")
 
-# export text file for p-checker input
+# export text file of test stats for p-checker input
 articleData$pchecker <- NA
 articleData[articleData$statType != "F",]$pchecker <-
   with(articleData[articleData$statType != "F",], paste(effect, ": ", statType,
@@ -77,13 +80,19 @@ articleData[articleData$statType == "chi2",]$pchecker <-
                                                            statistic, sep = ""))
 # a chi square value equal to N will cause p-checker to crash when it calculates
 # effect sizes, so we won't include N for one of the chi square tests. This
-# will only affect the correlation between N and Effect Size.
+# will only affect the correlation between N and Effect Size, none of the other
+# metrics.
 articleData$pchecker <- gsub(", 86", "", articleData$pchecker)
 pcheckerInput <- articleData$pchecker[-grep("NA", articleData$pchecker)]
 write.table(pcheckerInput, file = "processedData/pcheckerInput.txt",
             quote = FALSE, sep = "", eol = "\n", na = "NA", dec = ".",
             row.names = FALSE, col.names = FALSE)
-# run the p-checker analyses using the output in the text file
+################################################################################
+# To fully reproduce these analyses, run the p-checker analyses using the      #
+# output saved in processedData/pcheckerInput.txt. The original analyses were  #
+# done with p-checker version 0.40 (http://shinyapps.org/apps/p-checker/) on   #
+# 2016-1-20                                                                    #
+################################################################################
 
 # import p-checker data
 pcurve <- read.csv("Raw\ data/pchecker/p_curve_results.csv")
@@ -103,11 +112,6 @@ nstats <- ddply(articleData[, c("effect", "N", "d")], .(effect), summarize,
                 rangeN = max(N, na.rm = TRUE) - min(N, na.rm = TRUE),
                 corESn = cor(d, N, use = "pairwise.complete.obs"))
 
-# Schimmack (2014) defines the R-Index as: 
-# Percentage of Significant Results – Median (Estimated Power)
-# This is not the same value as returned by p-checker, so recalc the R-index
-rindex$rIndex <- rindex$success_rate - rindex$median.obs.pow
-
 # merge the data sets
 final <- merge(mlReduce, pcurve, all = TRUE, by.x = "effect", by.y = "paper_id")
 final <- merge(final, rindex, all = TRUE, by.x = "effect", by.y = "paper_id")
@@ -121,8 +125,13 @@ final$sigRep <- as.numeric(final$sigRep)
 
 # report correlations
 corVars <- c("Z_evidence", "Z_lack", "r_index", "var.z", "corESn", "medianN")
-cor(final[, c("esDiff", corVars)], use = "pairwise.complete.obs")
+corTable <- cor(final[, c("esDiff", corVars)], use = "pairwise.complete.obs")
+write.csv(corTable, "processedData/corTable.csv")
 
+for (i in 1:length(corVars)) {
+  print(paste("Correlation Test for", corVars[i]))
+  print(cor.test(final[, "esDiff"], final[, corVars[i]]))
+}
 
 # run linear models with esDiff as the outcome variable
 lm1 <- lm(esDiff ~ Z_evidence + r_index + var.z + corESn + medianN, final)
@@ -132,6 +141,8 @@ lm.rindex <- lm(esDiff ~ r_index, final)
 lm.tiva <- lm(esDiff ~ var.z, final)
 lm.corESn <- lm(esDiff ~ corESn, final)
 lm.medianN <- lm(esDiff ~ medianN, final)
+
+
 
 # run logit models with sigRep as outcome
 logit1 <- glm(sigRep ~ Z_evidence + r_index + var.z + corESn + medianN,
@@ -143,42 +154,99 @@ logit.tiva <- glm(sigRep ~ var.z, final, family = "binomial")
 logit.corESn <- glm(sigRep ~ corESn, final, family = "binomial")
 logit.medianN <- glm(sigRep ~ medianN, final, family = "binomial")
 
+# logit results
+summary(logit.pcurve1)
+summary(logit.pcurve2)
+summary(logit.rindex)
+summary(logit.tiva)
+summary(logit.corESn)
+summary(logit.medianN)
+
+# odds ratios
+exp(coef(logit.pcurve1))
+exp(coef(logit.pcurve2))
+exp(coef(logit.rindex))
+exp(coef(logit.tiva))
+exp(coef(logit.corESn))
+exp(coef(logit.medianN))
 
 # make some pretty figures
 # melt the data with esDiff as the outcome
 long1 <- melt(final[, c("effect", "esDiff", corVars)],
               id.vars = c("effect", "esDiff"),
               variable_name = "metric")
-levels(long1$metric) <- c("P-Curve Evidential Value",
-                          "P-Curve Lacks Evidential Value",
-                          "R-Index", "Variance of Z",
-                          "Correlation between Effect Size and N",
-                          "Median N")
 
+# facet labels
+levels(long1$metric) <- c("P-Curve:\nEvidential Value",
+                          "P-Curve:\nLacks Evidential Value",
+                          "R-Index", "TIVA:\nVariance of Z",
+                          "Correlation Between\nEffect Size and N",
+                          "N-Pact Factor:\nMedian N")
+
+# set up color palette 
+colors <- c("#a6cee3", "#1f78b4", "#b2df8a", "#33a02c", "#fb9a99", "#e31a1c",
+            "#fdbf6f", "#ff7f00", "#cab2d6", "#6a3d9a", "#dddd77", "#b15928",
+            "#000000", "#969696", "#8dd3c7", "#01665e", "#8dd3c7")
+
+# plot predicting diff in ES
 diffPlot <- ggplot(long1[complete.cases(long1),], aes(x = value, y = esDiff)) +
-  geom_point(aes(colour = effect)) +
+  geom_point(aes(colour = effect), size = 6) +
   geom_smooth(method = "lm", se = FALSE, colour = "black") +
   facet_wrap( ~ metric, scale = "free_x") +
-  scale_y_continuous("Difference in Effect Size", limits = c(-1.28, .03),
-                     breaks = c(-1.25, -1, -.75, -.5, -.25, 0))
+  scale_y_continuous("", limits = c(-1.28, .03),
+                     breaks = c(-1.2, -.8, -.4, 0)) +
+  scale_x_continuous("") +
+  labs(title = "Fig 1. Predicting Differences Between Original and Replication Effect Sizes (d)") +
+  scale_colour_manual(values = colors, guide = guide_legend(title = "Effect")) +
+  theme_bw() +
+  theme(strip.text = element_text(size = rel(2.4)),
+        axis.text = element_text(size = rel(1.6), colour = "#666666"),
+        axis.title.y = element_text(angle = 0),
+        legend.text = element_text(size = rel(2)),
+        plot.title = element_text(size = rel(3), vjust=3),
+        panel.margin = grid::unit(1, "lines"),
+        legend.title = element_text(size = rel(2)),
+        legend.key.size = grid::unit(16, "mm"))
+
+# save that plot!
+ggsave(filename = "figure1.pdf", plot = diffPlot, width = 25, height = 15,
+       units = "in", dpi = 300)
 
 
 # melt the data with sigRep as the outcome
 long2 <- melt(final[, c("effect", "sigRep", corVars)],
               id.vars = c("effect", "sigRep"),
               variable_name = "metric")
-levels(long2$metric) <- c("P-Curve Evidential Value",
-                          "P-Curve Lacks Evidential Value",
-                          "R-Index", "Variance of Z",
-                          "Correlation between Effect Size and N",
-                          "Median N")
+# facet labels
+levels(long2$metric) <- c("P-Curve:\nEvidential Value",
+                          "P-Curve:\nLacks Evidential Value",
+                          "R-Index", "TIVA:\nVariance of Z",
+                          "Correlation between\nEffect Size and N",
+                          "N-Pact Factor:\nMedian N")
 
-
+# plot predicted probability of success
 probPlot <- ggplot(long2[complete.cases(long2),], aes(x = value, y = sigRep)) +
-  geom_point(aes(colour = effect)) +
+  geom_point(aes(colour = effect), size = 6, shape = 1,
+             position = position_jitter(height = 0, width = .02)) +
   geom_smooth(method="glm", family="binomial", se = FALSE, colour = "black") +
   facet_wrap( ~ metric, scale = "free_x") +
-  scale_y_continuous("Predicted Probability of Successful Replication",
-                     limits = c(0, 1))
+  scale_y_continuous("", limits = c(0, 1))+
+  scale_x_continuous("") +
+  labs(title = "Fig 2. Predicted Probability of Replication Success") +
+  scale_colour_manual(values = colors, guide = guide_legend(title = "Effect")) +
+  theme_bw() +
+  theme(strip.text = element_text(size = rel(2.4)),
+        axis.text = element_text(size = rel(1.6), colour = "#666666"),
+        axis.title.y = element_text(angle = 0),
+        legend.text = element_text(size = rel(2)),
+        plot.title = element_text(size = rel(3), vjust=3),
+        panel.margin = grid::unit(1, "lines"),
+        legend.title = element_text(size = rel(2)),
+        legend.key.size = grid::unit(16, "mm"))
+
+# save that plot!
+ggsave(filename = "figure2.pdf", plot = probPlot, width = 25, height = 15,
+       units = "in", dpi = 300)
+
 
 
