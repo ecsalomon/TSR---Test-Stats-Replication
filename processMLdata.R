@@ -248,6 +248,48 @@ probPlot <- ggplot(long2[complete.cases(long2),], aes(x = value, y = sigRep)) +
 ggsave(filename = "figure2.pdf", plot = probPlot, width = 25, height = 15,
        units = "in", dpi = 300)
 
+
+# plot predicting proportion of labs in same direction
+long3 <- melt(final[, c("effect", "propSameDir", "sigRep", corVars)],
+              id.vars = c("effect", "propSameDir", "sigRep"),
+              variable_name = "metric")
+long3$overall <- factor(long3$sigRep,
+                        labels = c("Non-signficant", "Significant"))
+
+# facet labels
+levels(long3$metric) <- c("P-Curve:\nEvidential Value",
+                          "P-Curve:\nLacks Evidential Value",
+                          "R-Index", "TIVA:\nVariance of Z",
+                          "Correlation Between\nEffect Size and N",
+                          "N-Pact Factor:\nMedian N")
+
+
+# plot predicting proportion of labs in same direction
+propPlot <- ggplot(long3[complete.cases(long3),], aes(x = value, y = propSameDir)) +
+  geom_point(aes(colour = overall), size = 6) +
+  geom_smooth(method = "lm", se = FALSE, colour = "black") +
+  facet_wrap( ~ metric, scale = "free_x") +
+  scale_y_continuous("", limits = c(0, 1)) +
+  scale_x_continuous("") +
+  labs(title = "Fig 3. Proportion of Labs Returning Significant Result in Same Direction") +
+  scale_colour_manual(values = colors,
+                      guide = guide_legend(title = "Overall Result")) +
+  theme_bw() +
+  theme(strip.text = element_text(size = rel(2.4)),
+        axis.text = element_text(size = rel(1.6), colour = "#666666"),
+        axis.title.y = element_text(angle = 0),
+        legend.text = element_text(size = rel(2)),
+        plot.title = element_text(size = rel(3), vjust=3),
+        panel.margin = grid::unit(1, "lines"),
+        legend.title = element_text(size = rel(2)),
+        legend.key.size = grid::unit(16, "mm"))
+
+# save that plot!
+ggsave(filename = "figure3.png", plot = propPlot, width = 25, height = 15,
+       units = "in", dpi = 300)
+
+
+
 # export data
 write.csv(final, file = "processedData/final.csv")
 
