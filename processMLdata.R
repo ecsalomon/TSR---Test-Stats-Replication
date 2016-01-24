@@ -125,22 +125,22 @@ final$sigRep <- as.numeric(final$sigRep)
 
 # report correlations
 corVars <- c("Z_evidence", "Z_lack", "r_index", "var.z", "corESn", "medianN")
-corTable <- cor(final[, c("esDiff", corVars)], use = "pairwise.complete.obs")
+corTable <- cor(final[, c("wesDiff", corVars)], use = "pairwise.complete.obs")
 write.csv(corTable, "processedData/corTable.csv")
 
 for (i in 1:length(corVars)) {
   print(paste("Correlation Test for", corVars[i]))
-  print(cor.test(final[, "esDiff"], final[, corVars[i]]))
+  print(cor.test(final[, "wesDiff"], final[, corVars[i]]))
 }
 
 # run linear models with esDiff as the outcome variable
-lm1 <- lm(esDiff ~ Z_evidence + r_index + var.z + corESn + medianN, final)
-lm.pcurve1 <- lm(esDiff ~ Z_evidence, final)
-lm.pcurve2 <- lm(esDiff ~ Z_lack, final)
-lm.rindex <- lm(esDiff ~ r_index, final)
-lm.tiva <- lm(esDiff ~ var.z, final)
-lm.corESn <- lm(esDiff ~ corESn, final)
-lm.medianN <- lm(esDiff ~ medianN, final)
+lm1 <- lm(wesDiff ~ Z_evidence + r_index + var.z + corESn + medianN, final)
+lm.pcurve1 <- lm(wesDiff ~ Z_evidence, final)
+lm.pcurve2 <- lm(wesDiff ~ Z_lack, final)
+lm.rindex <- lm(wesDiff ~ r_index, final)
+lm.tiva <- lm(wesDiff ~ var.z, final)
+lm.corESn <- lm(wesDiff ~ corESn, final)
+lm.medianN <- lm(wesDiff ~ medianN, final)
 
 
 
@@ -171,9 +171,9 @@ exp(coef(logit.corESn))
 exp(coef(logit.medianN))
 
 # make some pretty figures
-# melt the data with esDiff as the outcome
-long1 <- melt(final[, c("effect", "esDiff", corVars)],
-              id.vars = c("effect", "esDiff"),
+# melt the data with wesDiff as the outcome
+long1 <- melt(final[, c("effect", "wesDiff", corVars)],
+              id.vars = c("effect", "wesDiff"),
               variable_name = "metric")
 
 # facet labels
@@ -189,7 +189,7 @@ colors <- c("#a6cee3", "#1f78b4", "#b2df8a", "#33a02c", "#fb9a99", "#e31a1c",
             "#000000", "#969696", "#8dd3c7", "#01665e", "#8dd3c7")
 
 # plot predicting diff in ES
-diffPlot <- ggplot(long1[complete.cases(long1),], aes(x = value, y = esDiff)) +
+diffPlot <- ggplot(long1[complete.cases(long1),], aes(x = value, y = wesDiff)) +
   geom_point(aes(colour = effect), size = 6) +
   geom_smooth(method = "lm", se = FALSE, colour = "black") +
   facet_wrap( ~ metric, scale = "free_x") +
@@ -248,5 +248,13 @@ probPlot <- ggplot(long2[complete.cases(long2),], aes(x = value, y = sigRep)) +
 ggsave(filename = "figure2.pdf", plot = probPlot, width = 25, height = 15,
        units = "in", dpi = 300)
 
+# export data
+write.csv(final, file = "processedData/final.csv")
 
+# data for before-and-after plot
+beforeAfter <-melt(final[, c("effect", "origD", "repES", "sigRep", "Z_hack",
+                             "wesDiff")],
+                   id.vars = c("effect", "sigRep", "Z_hack", "esDiff"),
+                   variable_name = "time")
+write.csv(beforeAfter, file = "processedData/beforeAfter.csv")
 
