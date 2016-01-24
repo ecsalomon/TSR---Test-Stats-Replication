@@ -1,7 +1,7 @@
 ################################################################################
 # This file builds a data frame containing data on effects and results from    #
-# Many Labs 1 and 3 and conducts several analyses designed to answet the       #
-# question of whether replication outcomes can predicted on the basis of       #
+# Many Labs 1 and 3 and conducts several analyses designed to answer the       #
+# question of whether replication outcomes can be predicted on the basis of    #
 # statistics that summarize the original articles reporting the replicated     #
 # effects.                                                                     #
 #                                                                              #
