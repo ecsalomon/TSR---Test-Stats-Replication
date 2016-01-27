@@ -89,9 +89,9 @@ write.table(pcheckerInput, file = "processedData/pcheckerInput.txt",
             row.names = FALSE, col.names = FALSE)
 ################################################################################
 # To fully reproduce these analyses, run the p-checker analyses using the      #
-# output saved in processedData/pcheckerInput.txt. The original analyses were  #
-# done with p-checker version 0.40 (http://shinyapps.org/apps/p-checker/) on   #
-# 2016-1-20                                                                    #
+# output saved in processedData/pcheckerInput.txt and turn on "Group results   #
+# by paper". The original analyses were done with p-checker version 0.40       #
+# (http://shinyapps.org/apps/p-checker/) on 2016-1-20                          #
 ################################################################################
 
 # import p-checker data
